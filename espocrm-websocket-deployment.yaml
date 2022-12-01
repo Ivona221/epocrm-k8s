@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: espocrm-websocket
+  name: espocrm-websocket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: espocrm-websocket
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.kompose.service: espocrm-websocket
+    spec:
+      containers:
+        - command:
+            - docker-websocket.sh
+          env:
+            - name: ESPOCRM_CONFIG_USE_WEB_SOCKET
+              value: "true"
+            - name: ESPOCRM_CONFIG_WEB_SOCKET_URL
+              value: http://20.103.15.153/ws
+            - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBMISSION_DSN
+              value: tcp://espocrm-websocket:7777
+            - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBSCRIBER_DSN
+              value: tcp://*:7777
+          image: espocrm/espocrm
+          name: espocrm-websocket
+          ports:
+            - containerPort: 8080
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/www/html
+              name: espocrm
+      restartPolicy: Always
+      volumes:
+        - name: espocrm
+          persistentVolumeClaim:
+            claimName: espocrm
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: espocrm-websocket
+  name: espocrm-websocket
+spec:
+  ports:
+    - name: "8081"
+      port: 8081
+      targetPort: 8080
+  selector:
+    io.kompose.service: espocrm-websocket
+status:
+  loadBalancer: {}
