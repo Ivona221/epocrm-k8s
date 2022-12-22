@@ -23,7 +23,7 @@ spec:
             - name: ESPOCRM_CONFIG_USE_WEB_SOCKET
               value: "true"
             - name: ESPOCRM_CONFIG_WEB_SOCKET_URL
-              value: http://20.103.15.153/ws2
+              value: http://app1.testblobstorage.com/ws
             - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBMISSION_DSN
               value: tcp://espocrm-websocket:7777
             - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBSCRIBER_DSN
