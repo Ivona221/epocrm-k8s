@@ -1,6 +1,6 @@
 ## How to deploy
 
-1. Create e kubernetes cluster (we currently do not have script to do this)
+1. Create a kubernetes cluster in [Azure](https://azure.microsoft.com/nl-nl/products/kubernetes-service/) (we currently do not have script to do this)
 2. Install azure cli on the machine you are working on (Check out the [Guide](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli))
 3. Install kubernetes-cli (Check out the [Guide](https://kubernetes.io/docs/tasks/tools/))
 4. Connect to the cluster
@@ -13,7 +13,7 @@ az aks get-credentials --resource-group resource-group-name --name cluster-name
 ```bash
 kubectl apply -f appx-deployment.yaml
 ```
-This will create **app service**, **deamon**, **web socket service**, **persistent storage** and **ingress**. Currently all the apps are separated inside of the cluster with namespaces meaning that for each set of (service, deamon, websocket and ingress there is a separate namespace created).
+This will create **app service**, **deamon**, **web socket service**, **persistent storage** and **ingress**. Currently all the apps are separated inside of the cluster with namespaces meaning that for each set of service, deamon, websocket and ingress there is a separate namespace created.
 
 8. In order for this setup to work we need to set up DNS and domains for each app. Currently the apps are on the same domain but they have different subdomains.
 9. When we define the variable ESPOCRM_DATABASE_NAME during the installation a new database is created for each app in the same resource.
