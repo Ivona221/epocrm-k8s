@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: app4
+  name: app1
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: espocrm
-  namespace: app4
+  namespace: app1
 spec:
   replicas: 1
   selector:
@@ -33,13 +33,11 @@ spec:
         - name: ESPOCRM_ADMIN_USERNAME
           value: admin
         - name: ESPOCRM_DATABASE_HOST
-          value: espocrm-db-single.mysql.database.azure.com
+          value: mysql.app1.svc.cluster.local
         - name: ESPOCRM_DATABASE_PASSWORD
-          value: password1!
-        - name: ESPOCRM_DATABASE_NAME
-          value: espocrm4
+          value: database_password
         - name: ESPOCRM_DATABASE_USER
-          value: db_user@espocrm-db-single
+          value: espocrm
         - name: ESPOCRM_SITE_URL
           value: http://localhost:80
       volumes:
@@ -51,7 +49,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: espocrm
-  namespace: app4
+  namespace: app1
 spec:
   type: ClusterIP
   ports:
@@ -64,7 +62,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: espocrm-daemon
-  namespace: app4
+  namespace: app1
 spec:
   replicas: 1
   selector:
@@ -97,14 +95,14 @@ status: {}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: espocrm-ingress-app4
-  namespace: app4
+  name: espocrm-ingress-app1
+  namespace: app1
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     # nginx.ingress.kubernetes.io/server-snippets: |
-    #   location /app4 {
+    #   location /app1 {
     #   proxy_set_header Upgrade $http_upgrade;
     #   proxy_http_version 1.1;
     #   proxy_set_header X-Forwarded-Host $http_host;
@@ -117,7 +115,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: app4.testblobstorage.com
+  - host: app2.testblobstorage.com
     http:
       paths:
       - path: /
@@ -143,7 +141,7 @@ metadata:
   labels:
     io.kompose.service: espocrm
   name: espocrm
-  namespace: app4
+  namespace: app1
 spec:
   accessModes:
     - ReadWriteOnce
@@ -159,7 +157,7 @@ metadata:
   labels:
     io.kompose.service: espocrm-websocket
   name: espocrm-websocket
-  namespace: app4
+  namespace: app1
 spec:
   replicas: 1
   selector:
@@ -179,7 +177,7 @@ spec:
             - name: ESPOCRM_CONFIG_USE_WEB_SOCKET
               value: "true"
             - name: ESPOCRM_CONFIG_WEB_SOCKET_URL
-              value: http://app4.testblobstorage.com/ws
+              value: http://app2.testblobstorage.com/ws
             - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBMISSION_DSN
               value: tcp://espocrm-websocket:7777
             - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBSCRIBER_DSN
@@ -206,7 +204,7 @@ metadata:
   labels:
     io.kompose.service: espocrm-websocket
   name: espocrm-websocket
-  namespace: app4
+  namespace: app1
 spec:
   ports:
     - name: "8081"
@@ -218,91 +216,82 @@ status:
   loadBalancer: {}
 
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: mysql
+  name: mysql
+  namespace: app1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.kompose.service: mysql
+    spec:
+      containers:
+        - args:
+            - --default-authentication-plugin=mysql_native_password
+          env:
+            - name: MYSQL_DATABASE
+              value: espocrm
+            - name: MYSQL_PASSWORD
+              value: database_password
+            - name: MYSQL_ROOT_PASSWORD
+              value: root_password
+            - name: MYSQL_USER
+              value: espocrm
+          image: mysql:8
+          name: mysql
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql
+      restartPolicy: Always
+      volumes:
+        - name: mysql
+          persistentVolumeClaim:
+            claimName: mysql
+status: {}
+
+---
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    io.kompose.service: mysql
   name: mysql
-  namespace: app4
+  namespace: app1
 spec:
-  type: ExternalName
-  externalName: espocrm-db-single.mysql.database.azure.com
+  ports:
+    - name: "3306"
+      port: 3306
+      targetPort: 3306
+  selector:
+    io.kompose.service: mysql
+status:
+  loadBalancer: {}
 
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   labels:
-#     io.kompose.service: mysql
-#   name: mysql
-#   namespace: app4
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       io.kompose.service: mysql
-#   strategy:
-#     type: Recreate
-#   template:
-#     metadata:
-#       labels:
-#         io.kompose.service: mysql
-#     spec:
-#       containers:
-#         - args:
-#             - --default-authentication-plugin=mysql_native_password
-#           env:
-#             - name: MYSQL_DATABASE
-#               value: espocrm
-#             - name: MYSQL_PASSWORD
-#               value: database_password
-#             - name: MYSQL_ROOT_PASSWORD
-#               value: root_password
-#             - name: MYSQL_USER
-#               value: espocrm
-#           image: mysql:8
-#           name: mysql
-#           resources: {}
-#           volumeMounts:
-#             - mountPath: /var/lib/mysql
-#               name: mysql
-#       restartPolicy: Always
-#       volumes:
-#         - name: mysql
-#           persistentVolumeClaim:
-#             claimName: mysql
-# status: {}
-
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   labels:
-#     io.kompose.service: mysql
-#   name: mysql
-#   namespace: app4
-# spec:
-#   ports:
-#     - name: "3306"
-#       port: 3306
-#       targetPort: 3306
-#   selector:
-#     io.kompose.service: mysql
-# status:
-#   loadBalancer: {}
-
-# ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   creationTimestamp: null
-#   labels:
-#     io.kompose.service: mysql
-#   name: mysql
-#   namespace: app4
-# spec:
-#   accessModes:
-#     - ReadWriteOnce
-#   resources:
-#     requests:
-#       storage: 100Mi
-# status: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: mysql
+  name: mysql
+  namespace: app1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
 

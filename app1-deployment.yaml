@@ -1,8 +1,10 @@
+# Create a namespace
 apiVersion: v1
 kind: Namespace
 metadata:
   name: app1
 
+# Espocrm app deployment
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -33,17 +35,21 @@ spec:
         - name: ESPOCRM_ADMIN_USERNAME
           value: admin
         - name: ESPOCRM_DATABASE_HOST
-          value: mysql.app1.svc.cluster.local
+          value: espocrm-db-single.mysql.database.azure.com
         - name: ESPOCRM_DATABASE_PASSWORD
-          value: database_password
+          value: password1!
+        - name: ESPOCRM_DATABASE_NAME
+          value: espocrm4
         - name: ESPOCRM_DATABASE_USER
-          value: espocrm
+          value: db_user@espocrm-db-single
         - name: ESPOCRM_SITE_URL
           value: http://localhost:80
       volumes:
       - name: espocrm
         persistentVolumeClaim:
           claimName: espocrm
+
+# Espocrm app service
 ---
 apiVersion: v1
 kind: Service
@@ -57,6 +63,7 @@ spec:
   selector:
     app: espocrm
 
+# Deamon deployment
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -91,6 +98,7 @@ spec:
             claimName: espocrm
 status: {}
 
+# Ingress
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -101,21 +109,10 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    # nginx.ingress.kubernetes.io/server-snippets: |
-    #   location /app1 {
-    #   proxy_set_header Upgrade $http_upgrade;
-    #   proxy_http_version 1.1;
-    #   proxy_set_header X-Forwarded-Host $http_host;
-    #   proxy_set_header X-Forwarded-Proto $scheme;
-    #   proxy_set_header X-Forwarded-For $remote_addr;
-    #   proxy_set_header Host $host;
-    #   proxy_set_header Connection "upgrade";
-    #   proxy_cache_bypass $http_upgrade;
-    #   }
 spec:
   ingressClassName: nginx
   rules:
-  - host: app2.testblobstorage.com
+  - host: app1.testblobstorage.com
     http:
       paths:
       - path: /
@@ -133,6 +130,7 @@ spec:
             port:
               number: 8081
 
+# Persistent volume
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -150,6 +148,7 @@ spec:
       storage: 100Mi
 status: {}
 
+# Web socket deployment
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -177,7 +176,7 @@ spec:
             - name: ESPOCRM_CONFIG_USE_WEB_SOCKET
               value: "true"
             - name: ESPOCRM_CONFIG_WEB_SOCKET_URL
-              value: http://app2.testblobstorage.com/ws
+              value: http://app1.testblobstorage.com/ws
             - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBMISSION_DSN
               value: tcp://espocrm-websocket:7777
             - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBSCRIBER_DSN
@@ -197,6 +196,7 @@ spec:
             claimName: espocrm
 status: {}
 
+# Websocket service
 ---
 apiVersion: v1
 kind: Service
@@ -215,83 +215,13 @@ spec:
 status:
   loadBalancer: {}
 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    io.kompose.service: mysql
-  name: mysql
-  namespace: app1
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      io.kompose.service: mysql
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        io.kompose.service: mysql
-    spec:
-      containers:
-        - args:
-            - --default-authentication-plugin=mysql_native_password
-          env:
-            - name: MYSQL_DATABASE
-              value: espocrm
-            - name: MYSQL_PASSWORD
-              value: database_password
-            - name: MYSQL_ROOT_PASSWORD
-              value: root_password
-            - name: MYSQL_USER
-              value: espocrm
-          image: mysql:8
-          name: mysql
-          resources: {}
-          volumeMounts:
-            - mountPath: /var/lib/mysql
-              name: mysql
-      restartPolicy: Always
-      volumes:
-        - name: mysql
-          persistentVolumeClaim:
-            claimName: mysql
-status: {}
-
+# External name for the database (not sure if needed)
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    io.kompose.service: mysql
   name: mysql
   namespace: app1
 spec:
-  ports:
-    - name: "3306"
-      port: 3306
-      targetPort: 3306
-  selector:
-    io.kompose.service: mysql
-status:
-  loadBalancer: {}
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  creationTimestamp: null
-  labels:
-    io.kompose.service: mysql
-  name: mysql
-  namespace: app1
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
-status: {}
-
+  type: ExternalName
+  externalName: espocrm-db-single.mysql.database.azure.com
