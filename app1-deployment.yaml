@@ -39,7 +39,7 @@ spec:
         - name: ESPOCRM_DATABASE_PASSWORD
           value: password1!
         - name: ESPOCRM_DATABASE_NAME
-          value: espocrm4
+          value: espocrm1
         - name: ESPOCRM_DATABASE_USER
           value: db_user@espocrm-db-single
         - name: ESPOCRM_SITE_URL
