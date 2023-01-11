@@ -8,7 +8,18 @@
 az aks get-credentials --resource-group resource-group-name --name cluster-name
 ```
 5. Create an Azure MySQL resource (we currently do not have a script to do this)
-6. If you want to create a new app copy the file app1-deployment.yaml and replace all **app1** occurances with the name of the application you want to create for example **appx**.
+6. Set up DNS and domain name for the new app
+After the creation of the databse resource note the following variables:
+- Host: {server_name}.mysql.database.azure.com
+- Username: {db_user}
+- Password: {db_password}
+6. If you want to create a new app copy the file app-deployment.yaml and replace the following variables:
+- {{NAMESPACE_NAME}} with a new namespace name
+- {{DATABASE_HOST}} with the Azure Databse host name ({server_name}.mysql.database.azure.com)
+- {{DATABASE_PASSWORD}} with the Azure database password
+- {{DATABASE_NAME}} with a new database name for the application (the database and all of it's tables will be created during the espocrm installation)
+- {{DATABASE_USER}} with {db_user}@{server_name}
+- {{SITE_DOMAIN}} with the app domain
 7. Run 
 ```bash
 kubectl apply -f appx-deployment.yaml

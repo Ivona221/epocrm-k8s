@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: app1
+  name: {{NAMESPACE_NAME}}
 
 # Espocrm app deployment
 ---
@@ -10,7 +10,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: espocrm
-  namespace: app1
+  namespace: {{NAMESPACE_NAME}}
 spec:
   replicas: 1
   selector:
@@ -35,13 +35,13 @@ spec:
         - name: ESPOCRM_ADMIN_USERNAME
           value: admin
         - name: ESPOCRM_DATABASE_HOST
-          value: espocrm-db-single.mysql.database.azure.com
+          value: {{DATABSE_HOST}}
         - name: ESPOCRM_DATABASE_PASSWORD
-          value: password1!
+          value: {{DATABASE_PASSWORD}}
         - name: ESPOCRM_DATABASE_NAME
-          value: espocrm1
+          value: {{DATABASE_NAME}}
         - name: ESPOCRM_DATABASE_USER
-          value: db_user@espocrm-db-single
+          value: {{DATABASE_USER}}
         - name: ESPOCRM_SITE_URL
           value: http://localhost:80
       volumes:
@@ -55,7 +55,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: espocrm
-  namespace: app1
+  namespace: {{NAMESPACE_NAME}}
 spec:
   type: ClusterIP
   ports:
@@ -69,7 +69,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: espocrm-daemon
-  namespace: app1
+  namespace: {{NAMESPACE_NAME}}
 spec:
   replicas: 1
   selector:
@@ -103,8 +103,8 @@ status: {}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: espocrm-ingress-app1
-  namespace: app1
+  name: espocrm-ingress
+  namespace: {{NAMESPACE_NAME}}
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
@@ -112,7 +112,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: app1.testblobstorage.com
+  - host: {{SITE_DOMAIN}}
     http:
       paths:
       - path: /
@@ -139,7 +139,7 @@ metadata:
   labels:
     io.kompose.service: espocrm
   name: espocrm
-  namespace: app1
+  namespace: {{NAMESPACE_NAME}}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -156,7 +156,7 @@ metadata:
   labels:
     io.kompose.service: espocrm-websocket
   name: espocrm-websocket
-  namespace: app1
+  namespace: {{NAMESPACE_NAME}}
 spec:
   replicas: 1
   selector:
@@ -176,7 +176,7 @@ spec:
             - name: ESPOCRM_CONFIG_USE_WEB_SOCKET
               value: "true"
             - name: ESPOCRM_CONFIG_WEB_SOCKET_URL
-              value: http://app1.testblobstorage.com/ws
+              value: https://{{SITE_DOMAIN}}/ws
             - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBMISSION_DSN
               value: tcp://espocrm-websocket:7777
             - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBSCRIBER_DSN
@@ -204,7 +204,7 @@ metadata:
   labels:
     io.kompose.service: espocrm-websocket
   name: espocrm-websocket
-  namespace: app1
+  namespace: {{NAMESPACE_NAME}}
 spec:
   ports:
     - name: "8081"
@@ -221,7 +221,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  namespace: app1
+  namespace: {{NAMESPACE_NAME}}
 spec:
   type: ExternalName
-  externalName: espocrm-db-single.mysql.database.azure.com
+  externalName: {{DATABSE_HOST}}
