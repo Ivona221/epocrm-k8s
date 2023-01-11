@@ -23,7 +23,7 @@ After the creation of the database resource, note the following variables:
 - {{SITE_DOMAIN}} with the app domain
 8. Run 
 ```bash
-kubectl apply -f appx-deployment.yaml
+kubectl apply -f {app_name}-deployment.yaml
 ```
 This will create **app service**, **daemon**, **web socket service**, **persistent storage** and **ingress**. Currently all the apps are separated inside of the cluster with namespaces meaning that for each set of service, daemon, websocket and ingress there is a separate namespace created.
 
