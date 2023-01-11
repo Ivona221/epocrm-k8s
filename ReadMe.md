@@ -1,18 +1,19 @@
 ## How to deploy
 
-1. Create a kubernetes cluster in [Azure](https://azure.microsoft.com/nl-nl/products/kubernetes-service/) (we currently do not have script to do this)
+1. Create a kubernetes cluster in [Azure](https://azure.microsoft.com/nl-nl/products/kubernetes-service/)
 2. Install azure cli on the machine you are working on (Check out the [Guide](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli))
 3. Install kubernetes-cli (Check out the [Guide](https://kubernetes.io/docs/tasks/tools/))
 4. Connect to the cluster
 ```bash
 az aks get-credentials --resource-group resource-group-name --name cluster-name
 ```
-5. Create an Azure MySQL resource (we currently do not have a script to do this)
-6. Set up DNS and domain name for the new app
-After the creation of the databse resource note the following variables:
+5. Create an Azure MySQL resource
+
+After the creation of the database resource, note the following variables:
 - Host: {server_name}.mysql.database.azure.com
 - Username: {db_user}
 - Password: {db_password}
+6. Set up DNS and domain name for the new app
 7. If you want to create a new app copy the file app-deployment.yaml and replace the following variables:
 - {{NAMESPACE_NAME}} with a new namespace name
 - {{DATABASE_HOST}} with the Azure Databse host name ({server_name}.mysql.database.azure.com)
@@ -35,7 +36,7 @@ kubectl logs name-of-the-pod
 
 ## Next steps
 
-1. Define a way how to easily deploy the solution (terraform scrips, Azure DevOps pipelines or bash script will be enough)
+1. Define a way how to easily deploy the solution (terraform scrips, Azure DevOps pipelines or a bash script will be enough)
 2. Make a virtual network for the databse resource and the kubernetes cluster
 3. Set up DNS with proper domain names and set up SSL
 4. Make a test deployment on the azure subscription of The Red Cross.
