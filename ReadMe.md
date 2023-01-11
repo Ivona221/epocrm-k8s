@@ -35,7 +35,7 @@ kubectl logs name-of-the-pod
 
 ## Next steps
 
-1. Define a way how to easily deploy the solution (terraform scrips, Azure DevOps pipelines)
+1. Define a way how to easily deploy the solution (terraform scrips, Azure DevOps pipelines or bash script will be enough)
 2. Make a virtual network for the databse resource and the kubernetes cluster
 3. Set up DNS with proper domain names and set up SSL
 4. Make a test deployment on the azure subscription of The Red Cross.
