@@ -13,22 +13,22 @@ After the creation of the databse resource note the following variables:
 - Host: {server_name}.mysql.database.azure.com
 - Username: {db_user}
 - Password: {db_password}
-6. If you want to create a new app copy the file app-deployment.yaml and replace the following variables:
+7. If you want to create a new app copy the file app-deployment.yaml and replace the following variables:
 - {{NAMESPACE_NAME}} with a new namespace name
 - {{DATABASE_HOST}} with the Azure Databse host name ({server_name}.mysql.database.azure.com)
 - {{DATABASE_PASSWORD}} with the Azure database password
 - {{DATABASE_NAME}} with a new database name for the application (the database and all of it's tables will be created during the espocrm installation)
 - {{DATABASE_USER}} with {db_user}@{server_name}
 - {{SITE_DOMAIN}} with the app domain
-7. Run 
+8. Run 
 ```bash
 kubectl apply -f appx-deployment.yaml
 ```
 This will create **app service**, **daemon**, **web socket service**, **persistent storage** and **ingress**. Currently all the apps are separated inside of the cluster with namespaces meaning that for each set of service, daemon, websocket and ingress there is a separate namespace created.
 
-8. In order for this setup to work we need to set up DNS and domains for each app. Currently the apps are on the same domain but they have different subdomains.
-9. When we define the variable ESPOCRM_DATABASE_NAME during the installation a new database is created for each app on the same server.
-10. If we want to check logs of the pod and see if the espocrm installation went well we run
+9. In order for this setup to work we need to set up DNS and domains for each app. Currently the apps are on the same domain but they have different subdomains.
+10. When we define the variable ESPOCRM_DATABASE_NAME during the installation a new database is created for each app on the same server.
+11. If we want to check logs of the pod and see if the espocrm installation went well we run
 ```bash
 kubectl logs name-of-the-pod
 ```
