@@ -27,7 +27,7 @@ kubectl apply -f appx-deployment.yaml
 This will create **app service**, **daemon**, **web socket service**, **persistent storage** and **ingress**. Currently all the apps are separated inside of the cluster with namespaces meaning that for each set of service, daemon, websocket and ingress there is a separate namespace created.
 
 8. In order for this setup to work we need to set up DNS and domains for each app. Currently the apps are on the same domain but they have different subdomains.
-9. When we define the variable ESPOCRM_DATABASE_NAME during the installation a new database is created for each app in the same resource.
+9. When we define the variable ESPOCRM_DATABASE_NAME during the installation a new database is created for each app on the same server.
 10. If we want to check logs of the pod and see if the espocrm installation went well we run
 ```bash
 kubectl logs name-of-the-pod
