@@ -24,6 +24,9 @@ spec:
           mountPath: "/etc/pre-install/DigiCertGlobalRootCA.crt.pem"
           subPath: DigiCertGlobalRootCA.crt.pem
           readOnly: false
+        - name: config-internal
+          mountPath: "/var/www/html/data/config-internal.php"
+          subPath: config-internal.php
         ports:
         - containerPort: 80
         env:
@@ -63,6 +66,12 @@ spec:
         configMap:
           name: ca-pemstore
           defaultMode: 0777
+      - name: config-internal
+        configMap:
+          name: config-internal
+          items:
+          - key: "config-internal.php"
+            path: "config-internal.php"
       - name: pre-install
         emptyDir: {}
           
