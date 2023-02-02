@@ -1,0 +1,238 @@
+# Espocrm app deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espocrm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: espocrm
+  template:
+    metadata:
+      labels:
+        app: espocrm
+    spec:
+      containers:
+      - name: espocrm
+        image: espocrm/espocrm
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: espocrm
+        - name: ca-pemstore
+          mountPath: "/etc/pre-install/DigiCertGlobalRootCA.crt.pem"
+          subPath: DigiCertGlobalRootCA.crt.pem
+          readOnly: false
+        ports:
+        - containerPort: 80
+        env:
+        - name: ESPOCRM_ADMIN_PASSWORD
+          value: password
+        - name: ESPOCRM_ADMIN_USERNAME
+          value: admin
+        - name: ESPOCRM_DATABASE_HOST
+          value: espocrm-mysql.mysql.database.azure.com
+        - name: ESPOCRM_DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass-simple
+              key: password
+        - name: ESPOCRM_DATABASE_NAME
+          value: espocrm6
+        - name: ESPOCRM_DATABASE_SSLCA
+          value: /etc/pre-install/DigiCertGlobalRootCA.crt.pem
+        - name: ESPOCRM_DATABASE_USER
+          value: espo_user
+        - name: ESPOCRM_SITE_URL
+          value: http://localhost:80
+      initContainers:
+      - name: copy-to-scripts
+        image: espocrm/espocrm
+        command: ['sh', '-c', 'cp /ca-pemstore/* /etc/pre-install/']
+        volumeMounts:
+          - name: ca-pemstore
+            mountPath: /ca-pemstore
+          - name: pre-install
+            mountPath: /etc/pre-install
+      volumes:
+      - name: espocrm
+        persistentVolumeClaim:
+          claimName: espocrm
+      - name: ca-pemstore
+        configMap:
+          name: ca-pemstore
+          defaultMode: 0777
+      - name: pre-install
+        emptyDir: {}
+          
+
+# Espocrm app service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: espocrm
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+  selector:
+    app: espocrm
+
+# Deamon deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espocrm-daemon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: espocrm-daemon
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.kompose.service: espocrm-daemon
+    spec:
+      containers:
+        - command:
+            - docker-daemon.sh
+          image: espocrm/espocrm
+          name: espocrm-daemon
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/www/html
+              name: espocrm
+      restartPolicy: Always
+      volumes:
+        - name: espocrm
+          persistentVolumeClaim:
+            claimName: espocrm
+status: {}
+
+# Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: espocrm-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: app6.testblobstorage.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: espocrm
+            port:
+              number: 80
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: espocrm-websocket
+            port:
+              number: 8081
+
+# Persistent volume
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: espocrm
+  name: espocrm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+# Web socket deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: espocrm-websocket
+  name: espocrm-websocket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: espocrm-websocket
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        io.kompose.service: espocrm-websocket
+    spec:
+      containers:
+        - command:
+            - docker-websocket.sh
+          env:
+            - name: ESPOCRM_CONFIG_USE_WEB_SOCKET
+              value: "true"
+            - name: ESPOCRM_CONFIG_WEB_SOCKET_URL
+              value: https://app6.testblobstorage.com/ws
+            - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBMISSION_DSN
+              value: tcp://espocrm-websocket:7777
+            - name: ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBSCRIBER_DSN
+              value: tcp://*:7777
+          image: espocrm/espocrm
+          name: espocrm-websocket
+          ports:
+            - containerPort: 8080
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/www/html
+              name: espocrm
+      restartPolicy: Always
+      volumes:
+        - name: espocrm
+          persistentVolumeClaim:
+            claimName: espocrm
+status: {}
+
+# Websocket service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: espocrm-websocket
+  name: espocrm-websocket
+spec:
+  ports:
+    - name: "8081"
+      port: 8081
+      targetPort: 8080
+  selector:
+    io.kompose.service: espocrm-websocket
+status:
+  loadBalancer: {}
+
+# External name for the database (not sure if needed)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  type: ExternalName
+  externalName: espocrm-mysql.mysql.database.azure.com
